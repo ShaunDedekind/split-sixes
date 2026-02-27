@@ -152,8 +152,8 @@ export default function Scorecard() {
                   <button
                     className="score-btn minus"
                     onClick={() => {
-                      const cur = score === '' ? hole.par : Number(score);
-                      updateScore(player.id, Math.max(1, cur - 1));
+                      if (score === '') { updateScore(player.id, hole.par); return; }
+                      updateScore(player.id, Math.max(1, Number(score) - 1));
                     }}
                   >−</button>
                   <input
@@ -169,8 +169,8 @@ export default function Scorecard() {
                   <button
                     className="score-btn plus"
                     onClick={() => {
-                      const cur = score === '' ? hole.par : Number(score);
-                      updateScore(player.id, cur + 1);
+                      if (score === '') { updateScore(player.id, hole.par); return; }
+                      updateScore(player.id, Number(score) + 1);
                     }}
                   >+</button>
                 </div>

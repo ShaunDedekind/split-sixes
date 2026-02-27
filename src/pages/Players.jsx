@@ -6,6 +6,7 @@ export default function Players() {
   const [newName, setNewName] = useState('');
   const [newHandicap, setNewHandicap] = useState('');
   const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState('');
   const [editHandicap, setEditHandicap] = useState('');
   const [error, setError] = useState('');
 
@@ -36,12 +37,17 @@ export default function Players() {
 
   function startEdit(player) {
     setEditingId(player.id);
+    setEditName(player.name);
     setEditHandicap(String(player.handicap ?? 0));
   }
 
   function saveEdit(id) {
+    const name = editName.trim();
+    if (!name) return;
+    const duplicate = players.some(p => p.id !== id && p.name.toLowerCase() === name.toLowerCase());
+    if (duplicate) return;
     const updated = players.map(p =>
-      p.id === id ? { ...p, handicap: Number(editHandicap) || 0 } : p
+      p.id === id ? { ...p, name, handicap: Number(editHandicap) || 0 } : p
     );
     savePlayers(updated);
     setPlayers(updated);
@@ -95,40 +101,48 @@ export default function Players() {
         )}
         <div className="player-list">
           {players.map(player => (
-            <div key={player.id} className="player-row">
-              <div className="player-select" style={{ cursor: 'default' }}>
-                <span className="player-name">{player.name}</span>
-                {editingId === player.id ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '0.75rem' }}>
-                    <span className="field-label" style={{ margin: 0 }}>HCP:</span>
-                    <input
-                      className="input"
-                      type="number"
-                      min="0"
-                      max="54"
-                      style={{ width: '4rem', padding: '0.2rem 0.4rem' }}
-                      value={editHandicap}
-                      onChange={e => setEditHandicap(e.target.value)}
-                      autoFocus
-                      onKeyDown={e => e.key === 'Enter' && saveEdit(player.id)}
-                    />
-                    <button className="btn btn-gold btn-sm" onClick={() => saveEdit(player.id)}>Save</button>
+            <div key={player.id} className={`player-row${editingId === player.id ? ' editing' : ''}`}
+              style={{ flexDirection: editingId === player.id ? 'column' : 'row', alignItems: editingId === player.id ? 'stretch' : 'center' }}
+            >
+              {editingId === player.id ? (
+                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div className="row-2">
+                    <div>
+                      <label className="field-label">Name</label>
+                      <input
+                        className="input"
+                        value={editName}
+                        onChange={e => setEditName(e.target.value)}
+                        autoFocus
+                        onKeyDown={e => e.key === 'Enter' && saveEdit(player.id)}
+                      />
+                    </div>
+                    <div>
+                      <label className="field-label">Handicap</label>
+                      <input
+                        className="input"
+                        type="number"
+                        min="0"
+                        max="54"
+                        value={editHandicap}
+                        onChange={e => setEditHandicap(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && saveEdit(player.id)}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn btn-gold btn-sm" style={{ flex: 1 }} onClick={() => saveEdit(player.id)}>Save</button>
                     <button className="btn btn-outline btn-sm" onClick={() => setEditingId(null)}>Cancel</button>
                   </div>
-                ) : (
-                  <span
-                    className="optional"
-                    style={{ marginLeft: '0.75rem', cursor: 'pointer' }}
-                    onClick={() => startEdit(player)}
-                    title="Click to edit handicap"
-                  >
-                    HCP {player.handicap ?? 0}
-                  </span>
-                )}
-              </div>
-              {editingId !== player.id && (
+                </div>
+              ) : (
                 <>
-                  <button className="btn btn-outline btn-sm" onClick={() => startEdit(player)}>Edit HCP</button>
+                  <button className="player-select" onClick={() => startEdit(player)}>
+                    <span className="player-name">{player.name}</span>
+                    <span className="optional" style={{ marginLeft: '0.5rem', fontSize: '0.8rem' }}>
+                      HCP {player.handicap ?? 0}
+                    </span>
+                  </button>
                   <button className="btn-icon" title="Remove player" onClick={() => handleDelete(player.id)}>✕</button>
                 </>
               )}

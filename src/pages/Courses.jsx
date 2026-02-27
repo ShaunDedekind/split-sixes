@@ -50,24 +50,34 @@ export default function Courses() {
   }
 
   if (editing) {
+    const isPreset = !!editing.preset;
+    const hasNine = editing.holes.some(h => h.nine);
     return (
       <div className="page">
         <div className="page-header">
           <button className="btn btn-outline btn-sm" onClick={() => setEditing(null)}>← Back</button>
           <h2 className="page-title">{editing.name}</h2>
+          {isPreset && <span className="badge">Preset</span>}
         </div>
 
         <div className="card">
-          <p className="field-label" style={{ marginBottom: '0.5rem' }}>
-            Set Par and Stroke Index for each hole.<br />
-            <span className="optional">Stroke Index 1 = hardest hole (gets strokes first)</span>
-          </p>
+          {isPreset ? (
+            <p className="optional" style={{ fontSize: '0.85rem' }}>
+              This is a preset course. Par and stroke index are read-only.
+            </p>
+          ) : (
+            <p className="field-label" style={{ marginBottom: '0.5rem' }}>
+              Set Par and Stroke Index for each hole.<br />
+              <span className="optional">Stroke Index 1 = hardest hole (gets strokes first)</span>
+            </p>
+          )}
 
           <div className="course-hole-table-wrap">
             <table className="course-hole-table">
               <thead>
                 <tr>
                   <th>Hole</th>
+                  {hasNine && <th>Nine</th>}
                   <th>Par</th>
                   <th>SI</th>
                 </tr>
@@ -76,25 +86,38 @@ export default function Courses() {
                 {editing.holes.map((hole, i) => (
                   <tr key={i}>
                     <td className="hole-num-cell">{hole.holeNumber}</td>
+                    {hasNine && (
+                      <td>
+                        <span className={`nine-badge nine-${hole.nine?.toLowerCase()}`}>{hole.nine}</span>
+                      </td>
+                    )}
                     <td>
-                      <select
-                        className="hole-select"
-                        value={hole.par}
-                        onChange={e => handleEditHole(i, 'par', e.target.value)}
-                      >
-                        {[3, 4, 5, 6].map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
+                      {isPreset ? (
+                        <span>{hole.par}</span>
+                      ) : (
+                        <select
+                          className="hole-select"
+                          value={hole.par}
+                          onChange={e => handleEditHole(i, 'par', e.target.value)}
+                        >
+                          {[3, 4, 5, 6].map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                      )}
                     </td>
                     <td>
-                      <select
-                        className="hole-select"
-                        value={hole.strokeIndex}
-                        onChange={e => handleEditHole(i, 'strokeIndex', e.target.value)}
-                      >
-                        {Array.from({ length: editing.holeCount }, (_, k) => k + 1).map(si => (
-                          <option key={si} value={si}>{si}</option>
-                        ))}
-                      </select>
+                      {isPreset ? (
+                        <span>{hole.strokeIndex}</span>
+                      ) : (
+                        <select
+                          className="hole-select"
+                          value={hole.strokeIndex}
+                          onChange={e => handleEditHole(i, 'strokeIndex', e.target.value)}
+                        >
+                          {Array.from({ length: editing.holeCount }, (_, k) => k + 1).map(si => (
+                            <option key={si} value={si}>{si}</option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -102,6 +125,7 @@ export default function Courses() {
               <tfoot>
                 <tr>
                   <td><strong>Total</strong></td>
+                  {hasNine && <td></td>}
                   <td><strong>{editing.holes.reduce((s, h) => s + h.par, 0)}</strong></td>
                   <td></td>
                 </tr>
@@ -109,9 +133,11 @@ export default function Courses() {
             </table>
           </div>
 
-          <button className="btn btn-primary btn-full" style={{ marginTop: '1rem' }} onClick={handleSaveEdits}>
-            Save Course
-          </button>
+          {!isPreset && (
+            <button className="btn btn-primary btn-full" style={{ marginTop: '1rem' }} onClick={handleSaveEdits}>
+              Save Course
+            </button>
+          )}
         </div>
       </div>
     );

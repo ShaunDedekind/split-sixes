@@ -2,6 +2,7 @@ const ROUNDS_KEY = 'splitSixes_rounds';
 const PLAYERS_KEY = 'splitSixes_players';
 const ACTIVE_ROUND_KEY = 'splitSixes_activeRound';
 const COURSES_KEY = 'splitSixes_courses';
+const SEEDED_KEY = 'splitSixes_seeded_v1';
 
 function load(key, fallback) {
   try {
@@ -153,4 +154,16 @@ export function createCourse(name, holeCount = 18) {
     holeCount,
     holes,
   };
+}
+
+// --- Seeding preset data ---
+export function seedPresets(presetCourses) {
+  if (localStorage.getItem(SEEDED_KEY)) return; // already seeded
+  const existing = getCourses();
+  const existingIds = new Set(existing.map(c => c.id));
+  const toAdd = presetCourses.filter(c => !existingIds.has(c.id));
+  if (toAdd.length > 0) {
+    save(COURSES_KEY, [...existing, ...toAdd]);
+  }
+  localStorage.setItem(SEEDED_KEY, '1');
 }

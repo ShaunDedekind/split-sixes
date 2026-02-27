@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayers, addPlayer, savePlayers, createNewRound, saveActiveRound, getActiveRound, getCourses } from '../utils/storage';
+import { getPlayers, addPlayer, savePlayers, createNewRound, saveActiveRound, getActiveRound, clearActiveRound, getCourses } from '../utils/storage';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -90,9 +90,14 @@ export default function Home() {
       {hasActive && (
         <div className="card resume-card">
           <p>You have an active round in progress.</p>
-          <button className="btn btn-gold" onClick={() => navigate('/scorecard')}>
-            Resume Round →
-          </button>
+          <div className="action-row">
+            <button className="btn btn-gold" onClick={() => navigate('/scorecard')}>
+              Resume Round →
+            </button>
+            <button className="btn btn-outline" onClick={() => { clearActiveRound(); setHasActive(false); }}>
+              Discard
+            </button>
+          </div>
         </div>
       )}
 

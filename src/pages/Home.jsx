@@ -1,22 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayers, addPlayer, savePlayers, createNewRound, saveActiveRound, getActiveRound } from '../utils/storage';
+import { getPlayers, addPlayer, savePlayers, createNewRound, saveActiveRound, getActiveRound, getCourses } from '../utils/storage';
 
 export default function Home() {
   const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [newName, setNewName] = useState('');
   const [holeCount, setHoleCount] = useState(18);
   const [betAmount, setBetAmount] = useState(1);
-  const [courseName, setCourseName] = useState('');
+  const [selectedCourseId, setSelectedCourseId] = useState('');
   const [hasActive, setHasActive] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     setPlayers(getPlayers());
+    setCourses(getCourses());
     setHasActive(!!getActiveRound());
   }, []);
+
+  const selectedCourse = courses.find(c => c.id === selectedCourseId) ?? null;
+
+  // When a course is selected, sync hole count to the course
+  useEffect(() => {
+    if (selectedCourse) {
+      setHoleCount(selectedCourse.holeCount);
+    }
+  }, [selectedCourseId]);
 
   function handleAddPlayer() {
     const name = newName.trim();
@@ -57,7 +68,13 @@ export default function Home() {
       setError('Select exactly 3 players');
       return;
     }
-    const round = createNewRound(selectedPlayers, holeCount, betAmount, courseName);
+    // Embed current handicaps from roster into the round players
+    const allPlayers = getPlayers();
+    const roundPlayers = selectedPlayers.map(p => {
+      const fresh = allPlayers.find(rp => rp.id === p.id);
+      return fresh ?? p;
+    });
+    const round = createNewRound(roundPlayers, holeCount, betAmount, selectedCourse);
     saveActiveRound(round);
     navigate('/scorecard');
   }
@@ -82,18 +99,35 @@ export default function Home() {
       <div className="card">
         <h2 className="section-title">Start New Round</h2>
 
-        <label className="field-label">Course Name <span className="optional">(optional)</span></label>
-        <input
+        <label className="field-label">Course <span className="optional">(optional)</span></label>
+        <select
           className="input"
-          placeholder="e.g. Augusta National"
-          value={courseName}
-          onChange={e => setCourseName(e.target.value)}
-        />
+          value={selectedCourseId}
+          onChange={e => setSelectedCourseId(e.target.value)}
+        >
+          <option value="">— No course (manual pars) —</option>
+          {courses.map(c => (
+            <option key={c.id} value={c.id}>
+              {c.name} ({c.holeCount} holes · Par {c.holes.reduce((s, h) => s + h.par, 0)})
+            </option>
+          ))}
+        </select>
 
-        <div className="row-2">
+        {selectedCourse && (
+          <p className="optional" style={{ marginTop: '0.25rem' }}>
+            Handicaps will be applied automatically using stroke index.
+          </p>
+        )}
+
+        <div className="row-2" style={{ marginTop: '0.75rem' }}>
           <div>
             <label className="field-label">Holes</label>
-            <select className="input" value={holeCount} onChange={e => setHoleCount(Number(e.target.value))}>
+            <select
+              className="input"
+              value={holeCount}
+              onChange={e => setHoleCount(Number(e.target.value))}
+              disabled={!!selectedCourse}
+            >
               <option value={9}>9 Holes</option>
               <option value={18}>18 Holes</option>
             </select>
@@ -124,6 +158,9 @@ export default function Home() {
           />
           <button className="btn btn-gold" onClick={handleAddPlayer}>Add</button>
         </div>
+        <p className="optional" style={{ marginTop: '0.25rem' }}>
+          Set player handicaps in the <a href="/players" style={{ color: 'var(--gold)' }}>Players</a> page.
+        </p>
       </div>
 
       <div className="card">
@@ -144,6 +181,9 @@ export default function Home() {
                 <button className="player-select" onClick={() => togglePlayer(player)}>
                   <span className="player-check">{selected ? '✓' : ''}</span>
                   <span className="player-name">{player.name}</span>
+                  <span className="optional" style={{ marginLeft: '0.5rem', fontSize: '0.8rem' }}>
+                    HCP {player.handicap ?? 0}
+                  </span>
                 </button>
                 <button
                   className="btn-icon"

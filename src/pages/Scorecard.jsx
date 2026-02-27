@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getActiveRound, saveActiveRound, saveRound, clearActiveRound } from '../utils/storage';
-import { calculateRoundTotals, getHolePointsMap } from '../utils/scoring';
+import { calculateRoundTotals, getHolePointsMap, getHoleStrokesMap } from '../utils/scoring';
 
 export default function Scorecard() {
   const navigate = useNavigate();
@@ -12,7 +12,6 @@ export default function Scorecard() {
   useEffect(() => {
     const r = getActiveRound();
     if (!r) { navigate('/'); return; }
-    // resume at first incomplete hole
     const firstIncomplete = r.holes.findIndex(h => {
       const scores = Object.values(h.scores || {});
       return scores.length < r.players.length || scores.some(s => s === '' || s === null);
@@ -24,8 +23,12 @@ export default function Scorecard() {
   if (!round) return <div className="page"><p className="loading">Loading…</p></div>;
 
   const hole = round.holes[currentHole];
-  const totals = calculateRoundTotals(round.holes, round.players);
-  const holePoints = getHolePointsMap(hole, round.players);
+  const useHandicaps = !!round.useHandicaps;
+  const totals = calculateRoundTotals(round.holes, round.players, useHandicaps);
+  const holePoints = getHolePointsMap(hole, round.players, useHandicaps);
+  const strokesMap = useHandicaps
+    ? getHoleStrokesMap(hole, round.players, round.holeCount)
+    : {};
   const holesPlayed = round.holes.filter(h =>
     h.scores && round.players.every(p => h.scores[p.id] !== '' && h.scores[p.id] != null)
   ).length;
@@ -69,14 +72,15 @@ export default function Scorecard() {
     return s !== '' && s !== null && s !== undefined;
   });
 
-  const pointColors = [4, 3, 2, 1, 0];
-
   return (
     <div className="page">
       <div className="scorecard-header">
         <div>
           <h2 className="sc-title">{round.courseName || 'Round'}</h2>
-          <p className="sc-sub">{new Date(round.date).toLocaleDateString()} · {round.holeCount} holes</p>
+          <p className="sc-sub">
+            {new Date(round.date).toLocaleDateString()} · {round.holeCount} holes
+            {useHandicaps && ' · Handicaps ON'}
+          </p>
         </div>
         <button className="btn btn-outline btn-sm" onClick={handleFinish}>
           Finish Round
@@ -107,10 +111,20 @@ export default function Scorecard() {
           <div>
             <span className="hole-num">Hole {hole.holeNumber}</span>
             <span className="hole-of"> of {round.holeCount}</span>
+            {useHandicaps && hole.strokeIndex && (
+              <span className="optional" style={{ marginLeft: '0.5rem', fontSize: '0.8rem' }}>
+                SI {hole.strokeIndex}
+              </span>
+            )}
           </div>
           <div className="par-row">
             <span className="par-label">Par</span>
-            <select className="par-select" value={hole.par} onChange={e => updatePar(e.target.value)}>
+            <select
+              className="par-select"
+              value={hole.par}
+              onChange={e => updatePar(e.target.value)}
+              disabled={useHandicaps}
+            >
               {[3, 4, 5, 6].map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
@@ -121,9 +135,19 @@ export default function Scorecard() {
             const score = hole.scores?.[player.id] ?? '';
             const pts = holePoints[player.id];
             const hasPts = pts !== undefined;
+            const strokes = strokesMap[player.id] ?? 0;
+            const gross = score !== '' ? Number(score) : null;
+            const net = gross !== null && strokes > 0 ? gross - strokes : gross;
             return (
               <div key={player.id} className="score-row">
-                <span className="player-label">{player.name}</span>
+                <div className="player-label-wrap">
+                  <span className="player-label">{player.name}</span>
+                  {useHandicaps && strokes > 0 && (
+                    <span className="stroke-indicator" title={`Receives ${strokes} stroke(s) on this hole`}>
+                      {'●'.repeat(strokes)}
+                    </span>
+                  )}
+                </div>
                 <div className="score-controls">
                   <button
                     className="score-btn minus"
@@ -150,8 +174,13 @@ export default function Scorecard() {
                     }}
                   >+</button>
                 </div>
-                <div className={`pts-badge ${hasPts ? `pts-${pts}` : ''}`}>
-                  {hasPts ? `${pts}pts` : '—'}
+                <div className="score-net-col">
+                  {useHandicaps && gross !== null && strokes > 0 && (
+                    <span className="net-score" title="Net score">net {net}</span>
+                  )}
+                  <div className={`pts-badge ${hasPts ? `pts-${pts}` : ''}`}>
+                    {hasPts ? `${pts}pts` : '—'}
+                  </div>
                 </div>
               </div>
             );
@@ -176,21 +205,30 @@ export default function Scorecard() {
       <div className="card">
         <h3 className="section-title">Running Totals</h3>
         <div className="totals-table">
-          <div className="totals-header">
+          <div className={`totals-header${useHandicaps ? ' hcp' : ''}`}>
             <span>Player</span>
             <span>Pts</span>
-            <span>Strokes</span>
+            <span>{useHandicaps ? 'Gross' : 'Strokes'}</span>
+            {useHandicaps && <span>Net</span>}
           </div>
           {[...round.players]
             .sort((a, b) => (totals[b.id]?.points ?? 0) - (totals[a.id]?.points ?? 0))
             .map((player, i) => (
-              <div key={player.id} className={`totals-row ${i === 0 ? 'leader' : ''}`}>
+              <div key={player.id} className={`totals-row${useHandicaps ? ' hcp' : ''} ${i === 0 ? 'leader' : ''}`}>
                 <span className="tot-name">
                   {i === 0 && <span className="crown">👑 </span>}
                   {player.name}
+                  {useHandicaps && (
+                    <span className="optional" style={{ fontSize: '0.75rem', marginLeft: '0.3rem' }}>
+                      ({player.handicap ?? 0})
+                    </span>
+                  )}
                 </span>
                 <span className="tot-pts">{totals[player.id]?.points ?? 0}</span>
                 <span className="tot-strokes">{totals[player.id]?.strokes ?? 0}</span>
+                {useHandicaps && (
+                  <span className="tot-strokes">{totals[player.id]?.netStrokes ?? 0}</span>
+                )}
               </div>
             ))}
         </div>
@@ -206,25 +244,30 @@ export default function Scorecard() {
               <tr>
                 <th>H</th>
                 <th>Par</th>
+                {useHandicaps && <th>SI</th>}
                 {round.players.map(p => <th key={p.id}>{p.name.split(' ')[0]}</th>)}
               </tr>
             </thead>
             <tbody>
               {round.holes.map((h, i) => {
-                const hPts = getHolePointsMap(h, round.players);
+                const hPts = getHolePointsMap(h, round.players, useHandicaps);
+                const hStrokes = useHandicaps ? getHoleStrokesMap(h, round.players, round.holeCount) : {};
                 return (
                   <tr key={i} className={i === currentHole ? 'current-hole-row' : ''} onClick={() => goToHole(i)}>
                     <td>{h.holeNumber}</td>
                     <td>{h.par}</td>
+                    {useHandicaps && <td className="optional">{h.strokeIndex}</td>}
                     {round.players.map(p => {
                       const s = h.scores?.[p.id];
                       const pts = hPts[p.id];
+                      const strokes = hStrokes[p.id] ?? 0;
                       const rel = s !== '' && s != null ? Number(s) - h.par : null;
                       return (
                         <td key={p.id} className={`sc-cell ${pts === 4 ? 'best-pts' : pts === 0 ? 'worst-pts' : ''}`}>
                           {s !== '' && s != null ? (
-                            <span title={`${pts ?? '?'}pts`}>
+                            <span title={`${pts ?? '?'}pts${strokes > 0 ? ` (${strokes} stroke${strokes > 1 ? 's' : ''})` : ''}`}>
                               {s}
+                              {strokes > 0 && <sup className="stroke-dot">{'•'.repeat(strokes)}</sup>}
                               {rel !== null && <sup className={rel < 0 ? 'under' : rel > 0 ? 'over' : ''}>{rel < 0 ? rel : rel > 0 ? `+${rel}` : 'E'}</sup>}
                             </span>
                           ) : '·'}

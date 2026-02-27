@@ -5,6 +5,8 @@ import Scorecard from './pages/Scorecard';
 import Summary from './pages/Summary';
 import History from './pages/History';
 import Leaderboard from './pages/Leaderboard';
+import Players from './pages/Players';
+import Courses from './pages/Courses';
 
 export default function App() {
   return (
@@ -18,6 +20,8 @@ export default function App() {
             <Route path="/summary/:id" element={<Summary />} />
             <Route path="/history" element={<History />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/players" element={<Players />} />
+            <Route path="/courses" element={<Courses />} />
           </Routes>
         </main>
         <NavBar />

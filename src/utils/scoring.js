@@ -5,7 +5,22 @@
  * - Two tie for low: each gets 3, highest gets 0
  * - Two tie for high: lowest gets 4, each tied gets 1
  * - All tie: each gets 2
+ *
+ * Handicap: players receive extra strokes on holes based on stroke index.
+ * Net score = gross score - strokes received on that hole.
+ * Points are calculated on net scores.
  */
+
+/**
+ * Given a player handicap and a hole's stroke index (1 = hardest),
+ * returns how many strokes that player receives on that hole.
+ */
+export function strokesOnHole(handicap, strokeIndex, totalHoles = 18) {
+  if (!handicap || handicap <= 0) return 0;
+  const full = Math.floor(handicap / totalHoles);
+  const remainder = handicap % totalHoles;
+  return full + (strokeIndex <= remainder ? 1 : 0);
+}
 
 export function calculateHolePoints(scores) {
   // scores: [{ playerId, score }] — only players with scores entered
@@ -65,15 +80,25 @@ export function calculateHolePoints(scores) {
   return result;
 }
 
-export function calculateRoundTotals(holes, players) {
+export function calculateRoundTotals(holes, players, useHandicaps = false) {
   const totals = {};
-  players.forEach(p => { totals[p.id] = { points: 0, strokes: 0 }; });
+  players.forEach(p => { totals[p.id] = { points: 0, strokes: 0, netStrokes: 0 }; });
 
   holes.forEach(hole => {
     if (!hole.scores) return;
     const entries = Object.entries(hole.scores)
       .filter(([, score]) => score !== '' && score !== null && score !== undefined)
-      .map(([playerId, score]) => ({ playerId, score: Number(score) }));
+      .map(([playerId, score]) => {
+        const gross = Number(score);
+        let net = gross;
+        if (useHandicaps) {
+          const player = players.find(p => p.id === playerId);
+          const hdcp = player?.handicap ?? 0;
+          const strokes = strokesOnHole(hdcp, hole.strokeIndex ?? hole.holeNumber, holes.length);
+          net = gross - strokes;
+        }
+        return { playerId, score: net, grossScore: gross };
+      });
 
     if (entries.length === 0) return;
 
@@ -81,7 +106,10 @@ export function calculateRoundTotals(holes, players) {
     holePoints.forEach(({ playerId, points, score }) => {
       if (totals[playerId]) {
         totals[playerId].points += points;
-        totals[playerId].strokes += score;
+        // gross strokes from original entries
+        const entry = entries.find(e => e.playerId === playerId);
+        totals[playerId].strokes += entry?.grossScore ?? 0;
+        totals[playerId].netStrokes += score;
       }
     });
   });
@@ -128,16 +156,39 @@ export function calculateMoneySettlement(totals, players, betAmount = 1) {
   }));
 }
 
-export function getHolePointsMap(hole, players) {
+export function getHolePointsMap(hole, players, useHandicaps = false) {
   if (!hole?.scores) return {};
   const entries = Object.entries(hole.scores)
     .filter(([, score]) => score !== '' && score !== null && score !== undefined)
-    .map(([playerId, score]) => ({ playerId, score: Number(score) }));
+    .map(([playerId, score]) => {
+      const gross = Number(score);
+      let net = gross;
+      if (useHandicaps && players) {
+        const player = players.find(p => p.id === playerId);
+        const hdcp = player?.handicap ?? 0;
+        const totalHoles = players._totalHoles ?? 18;
+        const strokes = strokesOnHole(hdcp, hole.strokeIndex ?? hole.holeNumber, totalHoles);
+        net = gross - strokes;
+      }
+      return { playerId, score: net };
+    });
 
   if (entries.length === 0) return {};
 
   const results = calculateHolePoints(entries);
   const map = {};
   results.forEach(r => { map[r.playerId] = r.points; });
+  return map;
+}
+
+/**
+ * Returns strokes received per player on a given hole.
+ */
+export function getHoleStrokesMap(hole, players, totalHoles = 18) {
+  if (!players) return {};
+  const map = {};
+  players.forEach(p => {
+    map[p.id] = strokesOnHole(p.handicap ?? 0, hole.strokeIndex ?? hole.holeNumber, totalHoles);
+  });
   return map;
 }

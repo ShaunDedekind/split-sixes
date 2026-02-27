@@ -758,3 +758,104 @@ sup.over { color: #f87171; font-size: 0.6rem; }
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 4px; }
+
+/* ---- Handicap / Scorecard extras ---- */
+.player-label-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+.stroke-indicator {
+  font-size: 0.55rem;
+  color: var(--gold-400);
+  letter-spacing: 1px;
+  line-height: 1;
+}
+.score-net-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.net-score {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+sup.stroke-dot {
+  color: var(--gold-400);
+  font-size: 0.6rem;
+  letter-spacing: -1px;
+}
+
+/* Totals table — 4-column variant for handicaps */
+.totals-header.hcp,
+.totals-row.hcp {
+  grid-template-columns: 1fr auto auto auto;
+}
+
+/* Course hole table */
+.course-hole-table-wrap {
+  overflow-y: auto;
+  max-height: 60vh;
+}
+.course-hole-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.course-hole-table th {
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surface-2);
+}
+.course-hole-table td {
+  padding: 6px 12px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.course-hole-table tfoot td {
+  border-top: 1px solid var(--border);
+  border-bottom: none;
+  font-weight: 700;
+  color: var(--text-gold);
+}
+.hole-num-cell {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.hole-select {
+  background: var(--surface-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 4px 6px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  -webkit-appearance: none;
+}
+.hole-select:focus { border-color: var(--gold-500); }
+
+/* page-header util */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+.page-header .page-title {
+  margin: 0;
+}

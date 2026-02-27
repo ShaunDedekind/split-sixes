@@ -19,6 +19,14 @@ export default function NavBar() {
         <span className="nav-icon">🏆</span>
         <span className="nav-label">Leaders</span>
       </NavLink>
+      <NavLink to="/players" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <span className="nav-icon">👤</span>
+        <span className="nav-label">Players</span>
+      </NavLink>
+      <NavLink to="/courses" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <span className="nav-icon">🗺️</span>
+        <span className="nav-label">Courses</span>
+      </NavLink>
     </nav>
   );
 }

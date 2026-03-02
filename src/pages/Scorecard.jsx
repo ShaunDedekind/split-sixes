@@ -56,6 +56,16 @@ export default function Scorecard() {
     saveActiveRound(updated);
   }
 
+  function updateStrokeIndex(value) {
+    const updated = { ...round };
+    updated.holes[currentHole] = {
+      ...updated.holes[currentHole],
+      strokeIndex: value === '' ? null : Number(value),
+    };
+    setRound(updated);
+    saveActiveRound(updated);
+  }
+
   function goToHole(idx) {
     setCurrentHole(idx);
   }
@@ -111,9 +121,18 @@ export default function Scorecard() {
           <div>
             <span className="hole-num">Hole {hole.holeNumber}</span>
             <span className="hole-of"> of {round.holeCount}</span>
-            {useHandicaps && hole.strokeIndex && (
+            {useHandicaps && (
               <span className="optional" style={{ marginLeft: '0.5rem', fontSize: '0.8rem' }}>
-                SI {hole.strokeIndex}
+                SI <select
+                  className="par-select"
+                  value={hole.strokeIndex ?? ''}
+                  onChange={e => updateStrokeIndex(e.target.value)}
+                >
+                  <option value="">—</option>
+                  {Array.from({ length: round.holeCount }, (_, i) => i + 1).map(n => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
               </span>
             )}
           </div>

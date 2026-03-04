@@ -1,18 +1,18 @@
 /* =====================================================
-   Split Sixes — Dark Green & Gold Theme
+   Split Sixes — Dark Blue & Gold Theme
    ===================================================== */
 
 :root {
   /* Colors */
-  --green-900: #0a1f0f;
-  --green-800: #0f2d17;
-  --green-700: #14401f;
-  --green-600: #1a5228;
-  --green-500: #1e6b31;
-  --green-400: #27843e;
-  --green-300: #3da05a;
-  --green-200: #6abf85;
-  --green-100: #a8dbb8;
+  --blue-900: #08101f;
+  --blue-800: #0d1a2e;
+  --blue-700: #0f2040;
+  --blue-600: #152d55;
+  --blue-500: #1a3a6b;
+  --blue-400: #2563eb;
+  --blue-300: #3b82f6;
+  --blue-200: #7ab3f5;
+  --blue-100: #bfdbfe;
 
   --gold-500: #c9a84c;
   --gold-400: #d4af37;
@@ -20,15 +20,15 @@
   --gold-200: #efd27f;
   --gold-100: #f9edbb;
 
-  --surface-0: #0a1f0f;
-  --surface-1: #0f2d17;
-  --surface-2: #162b1c;
-  --surface-3: #1e3d26;
-  --surface-4: #254a2e;
+  --surface-0: #08101f;
+  --surface-1: #0d1a2e;
+  --surface-2: #111e30;
+  --surface-3: #162538;
+  --surface-4: #1c2f45;
 
-  --text-primary: #f0f4f1;
-  --text-secondary: #a0bfa8;
-  --text-muted: #6a8a72;
+  --text-primary: #f0f4f8;
+  --text-secondary: #90afd4;
+  --text-muted: #567a9e;
   --text-gold: #d4af37;
 
   --border: rgba(255, 255, 255, 0.08);
@@ -203,15 +203,15 @@ button { cursor: pointer; font-family: inherit; border: none; outline: none; }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
 .btn-primary {
-  background: var(--green-400);
+  background: var(--blue-400);
   color: #fff;
   box-shadow: var(--shadow);
 }
-.btn-primary:hover:not(:disabled) { background: var(--green-300); }
+.btn-primary:hover:not(:disabled) { background: var(--blue-300); }
 
 .btn-gold {
   background: linear-gradient(135deg, var(--gold-500), var(--gold-400));
-  color: var(--green-900);
+  color: var(--blue-900);
   font-weight: 700;
   box-shadow: var(--shadow-gold);
 }
@@ -293,7 +293,7 @@ button { cursor: pointer; font-family: inherit; border: none; outline: none; }
 .player-row.selected .player-check {
   background: var(--gold-400);
   border-color: var(--gold-400);
-  color: var(--green-900);
+  color: var(--blue-900);
 }
 .player-name { font-weight: 500; }
 
@@ -375,11 +375,11 @@ button { cursor: pointer; font-family: inherit; border: none; outline: none; }
 }
 .hole-pill.active {
   background: var(--gold-400);
-  color: var(--green-900);
+  color: var(--blue-900);
   border-color: var(--gold-400);
 }
-.hole-pill.done { border-color: var(--green-400); color: var(--green-300); }
-.hole-pill.done.active { background: var(--gold-400); color: var(--green-900); }
+.hole-pill.done { border-color: var(--blue-400); color: var(--blue-300); }
+.hole-pill.done.active { background: var(--gold-400); color: var(--blue-900); }
 
 /* Hole Card */
 .hole-card { gap: 16px; }
@@ -442,7 +442,7 @@ button { cursor: pointer; font-family: inherit; border: none; outline: none; }
   transition: background 0.15s;
 }
 .score-btn:hover { background: var(--surface-3); }
-.score-btn:active { background: var(--green-600); }
+.score-btn:active { background: var(--blue-600); }
 .score-input {
   flex: 1;
   background: none;
@@ -636,7 +636,7 @@ sup.over { color: #f87171; font-size: 0.6rem; }
   cursor: pointer;
   transition: border-color 0.15s;
 }
-.history-card:hover { border-color: var(--green-400); }
+.history-card:hover { border-color: var(--blue-400); }
 .history-top { display: flex; align-items: flex-start; justify-content: space-between; }
 .history-course { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
 .history-date { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
@@ -697,7 +697,7 @@ sup.over { color: #f87171; font-size: 0.6rem; }
   border-radius: var(--radius-sm);
   transition: all 0.15s;
 }
-.tab-btn.active { background: var(--gold-400); color: var(--green-900); }
+.tab-btn.active { background: var(--gold-400); color: var(--blue-900); }
 .tab-btn:hover:not(.active) { color: var(--text-secondary); }
 
 .lb-header {

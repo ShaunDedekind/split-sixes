@@ -66,6 +66,20 @@ export default function Scorecard() {
     saveActiveRound(updated);
   }
 
+  function toggleStrikeout(playerId) {
+    const updated = { ...round };
+    const currentStrikeouts = updated.holes[currentHole].strikeouts || {};
+    updated.holes[currentHole] = {
+      ...updated.holes[currentHole],
+      strikeouts: {
+        ...currentStrikeouts,
+        [playerId]: !currentStrikeouts[playerId]
+      }
+    };
+    setRound(updated);
+    saveActiveRound(updated);
+  }
+
   function goToHole(idx) {
     setCurrentHole(idx);
   }
@@ -157,10 +171,21 @@ export default function Scorecard() {
             const strokes = strokesMap[player.id] ?? 0;
             const gross = score !== '' ? Number(score) : null;
             const net = gross !== null && strokes > 0 ? gross - strokes : gross;
+            const isStruckOut = hole.strikeouts?.[player.id];
             return (
               <div key={player.id} className="score-row">
-                <div className="player-label-wrap">
-                  <span className="player-label">{player.name}</span>
+                <div className="player-label-wrap" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span className={`player-label ${isStruckOut ? 'struck-out' : ''}`} style={{ textDecoration: isStruckOut ? 'line-through' : 'none' }}>
+                    {player.name}
+                  </span>
+                  <button 
+                    className={`btn-icon ${isStruckOut ? 'active' : ''}`} 
+                    onClick={() => toggleStrikeout(player.id)}
+                    title={isStruckOut ? "Cancel strikeout" : "Strike out player (0 pts)"}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: isStruckOut ? 1 : 0.4, padding: '0 4px' }}
+                  >
+                    🚫
+                  </button>
                   {useHandicaps && strokes > 0 && (
                     <span className="stroke-indicator" title={`Receives ${strokes} stroke(s) on this hole`}>
                       {'●'.repeat(strokes)}
@@ -281,13 +306,15 @@ export default function Scorecard() {
                       const pts = hPts[p.id];
                       const strokes = hStrokes[p.id] ?? 0;
                       const rel = s !== '' && s != null ? Number(s) - h.par : null;
+                      const isStruckOut = h.strikeouts?.[p.id];
                       return (
                         <td key={p.id} className={`sc-cell ${pts === 4 ? 'best-pts' : pts === 0 ? 'worst-pts' : ''}`}>
                           {s !== '' && s != null ? (
                             <span title={`${pts ?? '?'}pts${strokes > 0 ? ` (${strokes} stroke${strokes > 1 ? 's' : ''})` : ''}`}>
-                              {s}
+                              <span style={{ textDecoration: isStruckOut ? 'line-through' : 'none', color: isStruckOut ? '#888' : 'inherit' }}>{s}</span>
                               {strokes > 0 && <sup className="stroke-dot">{'•'.repeat(strokes)}</sup>}
                               {rel !== null && <sup className={rel < 0 ? 'under' : rel > 0 ? 'over' : ''}>{rel < 0 ? rel : rel > 0 ? `+${rel}` : 'E'}</sup>}
+                              {isStruckOut && <span style={{fontSize: '0.7em', marginLeft: '2px'}}>🚫</span>}
                             </span>
                           ) : '·'}
                         </td>

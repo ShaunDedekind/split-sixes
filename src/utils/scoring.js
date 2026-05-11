@@ -22,29 +22,37 @@ export function strokesOnHole(handicap, strokeIndex, totalHoles = 18) {
   return full + (strokeIndex <= remainder ? 1 : 0);
 }
 
-export function calculateHolePoints(scores) {
+export function calculateHolePoints(scores, strikeouts = {}) {
   // scores: [{ playerId, score }] — only players with scores entered
   if (scores.length === 0) return [];
 
-  const sorted = [...scores].sort((a, b) => a.score - b.score);
-  const [low, mid, high] = [sorted[0].score, sorted[1]?.score, sorted[2]?.score];
-
-  const result = scores.map(({ playerId, score }) => ({ playerId, score, points: 0 }));
+  const result = scores.map(({ playerId, score, grossScore }) => ({ playerId, score, grossScore, points: 0 }));
 
   const setPoints = (playerId, pts) => {
     const r = result.find(r => r.playerId === playerId);
     if (r) r.points = pts;
   };
 
-  if (scores.length === 1) {
-    setPoints(scores[0].playerId, 6);
+  const activeScores = scores.filter(s => !strikeouts[s.playerId]);
+
+  if (activeScores.length === 0) {
     return result;
   }
 
-  if (scores.length === 2) {
-    if (low === high) {
+  const sorted = [...activeScores].sort((a, b) => a.score - b.score);
+  const low = sorted[0]?.score;
+  const mid = sorted[1]?.score;
+  const high = sorted[2]?.score;
+
+  if (activeScores.length === 1) {
+    setPoints(activeScores[0].playerId, 6);
+    return result;
+  }
+
+  if (activeScores.length === 2) {
+    if (low === mid) {
       // tie: 3 each
-      scores.forEach(s => setPoints(s.playerId, 3));
+      activeScores.forEach(s => setPoints(s.playerId, 3));
     } else {
       sorted.forEach((s, i) => setPoints(s.playerId, i === 0 ? 4 : 2));
     }
@@ -57,20 +65,20 @@ export function calculateHolePoints(scores) {
   const botTie = mid === high && low !== mid;   // two tie for high
 
   if (allTie) {
-    scores.forEach(s => setPoints(s.playerId, 2));
+    activeScores.forEach(s => setPoints(s.playerId, 2));
   } else if (topTie) {
-    scores.forEach(s => {
+    activeScores.forEach(s => {
       if (s.score === low) setPoints(s.playerId, 3);
       else setPoints(s.playerId, 0);
     });
   } else if (botTie) {
-    scores.forEach(s => {
+    activeScores.forEach(s => {
       if (s.score === low) setPoints(s.playerId, 4);
       else setPoints(s.playerId, 1);
     });
   } else {
     // all different
-    scores.forEach(s => {
+    activeScores.forEach(s => {
       if (s.score === low) setPoints(s.playerId, 4);
       else if (s.score === mid) setPoints(s.playerId, 2);
       else setPoints(s.playerId, 0);
@@ -102,7 +110,7 @@ export function calculateRoundTotals(holes, players, useHandicaps = false) {
 
     if (entries.length === 0) return;
 
-    const holePoints = calculateHolePoints(entries);
+    const holePoints = calculateHolePoints(entries, hole.strikeouts || {});
     holePoints.forEach(({ playerId, points, score }) => {
       if (totals[playerId]) {
         totals[playerId].points += points;
@@ -175,7 +183,7 @@ export function getHolePointsMap(hole, players, useHandicaps = false) {
 
   if (entries.length === 0) return {};
 
-  const results = calculateHolePoints(entries);
+  const results = calculateHolePoints(entries, hole.strikeouts || {});
   const map = {};
   results.forEach(r => { map[r.playerId] = r.points; });
   return map;

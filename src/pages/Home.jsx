@@ -40,6 +40,13 @@ export default function Home() {
     setPlayers(prev => [...prev, player]);
     setNewName('');
     setError('');
+    
+    setSelectedPlayers(prev => {
+      if (prev.length < 3) {
+        return [...prev, player];
+      }
+      return prev;
+    });
   }
 
   function togglePlayer(player) {
@@ -161,7 +168,7 @@ export default function Home() {
             onChange={e => { setNewName(e.target.value); setError(''); }}
             onKeyDown={e => e.key === 'Enter' && handleAddPlayer()}
           />
-          <button className="btn btn-gold" onClick={handleAddPlayer}>Add</button>
+          <button className="btn btn-outline" onClick={handleAddPlayer}>Add</button>
         </div>
         <p className="optional" style={{ marginTop: '0.25rem' }}>
           Set player handicaps in the <a href="/players" style={{ color: 'var(--gold)' }}>Players</a> page.
@@ -205,7 +212,7 @@ export default function Home() {
         {error && <p className="error-msg">{error}</p>}
 
         <button
-          className="btn btn-primary btn-full"
+          className="btn btn-gold btn-full"
           disabled={selectedPlayers.length !== 3}
           onClick={handleStartRound}
         >

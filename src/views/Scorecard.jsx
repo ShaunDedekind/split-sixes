@@ -1,17 +1,23 @@
+"use client";
+
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { getActiveRound, saveActiveRound, saveRound, clearActiveRound } from '../utils/storage';
 import { calculateRoundTotals, getHolePointsMap, getHoleStrokesMap } from '../utils/scoring';
+import { Ban, Crown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import ScoreBottomSheet from '../components/ScoreBottomSheet';
 
 export default function Scorecard() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [round, setRound] = useState(null);
   const [currentHole, setCurrentHole] = useState(0);
-  const inputRefs = useRef([]);
+  const [activePlayerForScore, setActivePlayerForScore] = useState(null);
+  const [direction, setDirection] = useState(0);
 
   useEffect(() => {
     const r = getActiveRound();
-    if (!r) { navigate('/'); return; }
+    if (!r) { router.push('/'); return; }
     const firstIncomplete = r.holes.findIndex(h => {
       const scores = Object.values(h.scores || {});
       return scores.length < r.players.length || scores.some(s => s === '' || s === null);
@@ -81,6 +87,7 @@ export default function Scorecard() {
   }
 
   function goToHole(idx) {
+    setDirection(idx > currentHole ? 1 : -1);
     setCurrentHole(idx);
   }
 
@@ -88,7 +95,7 @@ export default function Scorecard() {
     const completed = { ...round, status: 'completed', completedDate: new Date().toISOString() };
     saveRound(completed);
     clearActiveRound();
-    navigate('/summary', { state: { roundId: completed.id } });
+    router.push(`/summary/${completed.id}`);
   }
 
   const allScoresEntered = round.players.every(p => {
@@ -130,7 +137,28 @@ export default function Scorecard() {
       </div>
 
       {/* Current Hole Card */}
-      <div className="card hole-card">
+      <div style={{ position: 'relative' }}>
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={currentHole}
+            custom={direction}
+            variants={{
+              enter: (dir) => ({ x: dir > 0 ? 30 : -30, opacity: 0 }),
+              center: { x: 0, opacity: 1, transition: { duration: 0.15 } },
+              exit: (dir) => ({ x: dir < 0 ? 30 : -30, opacity: 0, transition: { duration: 0.15 } })
+            }}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="card hole-card"
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={(e, { offset }) => {
+              if (offset.x < -40 && currentHole < round.holes.length - 1) goToHole(currentHole + 1);
+              else if (offset.x > 40 && currentHole > 0) goToHole(currentHole - 1);
+            }}
+          >
         <div className="hole-header">
           <div>
             <span className="hole-num">Hole {hole.holeNumber}</span>
@@ -184,7 +212,7 @@ export default function Scorecard() {
                     title={isStruckOut ? "Cancel strikeout" : "Strike out player (0 pts)"}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: isStruckOut ? 1 : 0.4, padding: '0 4px' }}
                   >
-                    🚫
+                    <Ban size={16} />
                   </button>
                   {useHandicaps && strokes > 0 && (
                     <span className="stroke-indicator" title={`Receives ${strokes} stroke(s) on this hole`}>
@@ -192,24 +220,21 @@ export default function Scorecard() {
                     </span>
                   )}
                 </div>
-                <div className="score-controls">
+                <div className="score-controls" style={{ flex: 1, padding: '0 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <button
                     className="score-btn minus"
                     onClick={() => {
-                      if (score === '') { updateScore(player.id, hole.par); return; }
+                      if (score === '') { updateScore(player.id, hole.par - 1); return; }
                       updateScore(player.id, Math.max(1, Number(score) - 1));
                     }}
                   >−</button>
-                  <input
-                    ref={el => inputRefs.current[idx] = el}
-                    className="score-input"
-                    type="number"
-                    min="1"
-                    max="20"
-                    value={score}
-                    placeholder={hole.par}
-                    onChange={e => updateScore(player.id, e.target.value)}
-                  />
+                  <button
+                    className={`score-display-btn ${score === '' ? 'empty' : ''}`}
+                    onClick={() => setActivePlayerForScore(player)}
+                    style={{ flex: 1, color: score === '' ? 'var(--text-muted)' : 'inherit', width: '100%' }}
+                  >
+                    {score === '' ? hole.par : score}
+                  </button>
                   <button
                     className="score-btn plus"
                     onClick={() => {
@@ -243,6 +268,8 @@ export default function Scorecard() {
             onClick={() => goToHole(currentHole + 1)}
           >Next →</button>
         </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* Running Totals */}
@@ -260,7 +287,7 @@ export default function Scorecard() {
             .map((player, i) => (
               <div key={player.id} className={`totals-row${useHandicaps ? ' hcp' : ''} ${i === 0 ? 'leader' : ''}`}>
                 <span className="tot-name">
-                  {i === 0 && <span className="crown">👑 </span>}
+                  {i === 0 && <span className="crown" style={{marginRight: '4px', verticalAlign: 'text-bottom'}}><Crown size={14} color="var(--gold-400)" /></span>}
                   {player.name}
                   {useHandicaps && (
                     <span className="optional" style={{ fontSize: '0.75rem', marginLeft: '0.3rem' }}>
@@ -314,7 +341,7 @@ export default function Scorecard() {
                               <span style={{ textDecoration: isStruckOut ? 'line-through' : 'none', color: isStruckOut ? '#888' : 'inherit' }}>{s}</span>
                               {strokes > 0 && <sup className="stroke-dot">{'•'.repeat(strokes)}</sup>}
                               {rel !== null && <sup className={rel < 0 ? 'under' : rel > 0 ? 'over' : ''}>{rel < 0 ? rel : rel > 0 ? `+${rel}` : 'E'}</sup>}
-                              {isStruckOut && <span style={{fontSize: '0.7em', marginLeft: '2px'}}>🚫</span>}
+                              {isStruckOut && <span style={{marginLeft: '2px', verticalAlign: 'text-bottom'}}><Ban size={10} /></span>}
                             </span>
                           ) : '·'}
                         </td>
@@ -327,6 +354,14 @@ export default function Scorecard() {
           </table>
         </div>
       </div>
+      {/* Score Bottom Sheet Modal */}
+      <ScoreBottomSheet
+        isOpen={!!activePlayerForScore}
+        onClose={() => setActivePlayerForScore(null)}
+        player={activePlayerForScore}
+        currentScore={activePlayerForScore ? hole.scores?.[activePlayerForScore.id] ?? '' : ''}
+        onSelectScore={(score) => updateScore(activePlayerForScore.id, score)}
+      />
     </div>
   );
 }

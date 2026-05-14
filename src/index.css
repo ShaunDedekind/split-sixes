@@ -21,10 +21,13 @@
   --gold-100: #f9edbb;
 
   --surface-0: #08101f;
-  --surface-1: #0d1a2e;
-  --surface-2: #111e30;
-  --surface-3: #162538;
-  --surface-4: #1c2f45;
+  --surface-1: rgba(13, 26, 46, 0.7);
+  --surface-2: rgba(17, 30, 48, 0.65);
+  --surface-3: rgba(22, 37, 56, 0.6);
+  --surface-4: rgba(28, 47, 69, 0.55);
+  
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: blur(20px);
 
   --text-primary: #f0f4f8;
   --text-secondary: #90afd4;
@@ -41,7 +44,7 @@
   --shadow: 0 2px 12px rgba(0,0,0,0.4);
   --shadow-gold: 0 2px 16px rgba(212,175,55,0.15);
 
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-outfit), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   color-scheme: dark;
@@ -51,7 +54,7 @@
 
 html, body, #root {
   height: 100%;
-  background: var(--surface-0);
+  background: radial-gradient(circle at top right, var(--green-700) 0%, var(--surface-0) 60%);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
 }
@@ -100,7 +103,10 @@ html, body, #root {
 /* ---- Card ---- */
 .card {
   background: var(--surface-2);
-  border: 1px solid var(--border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 32px rgba(0, 0, 0, 0.4);
   border-radius: var(--radius-lg);
   padding: 16px;
   display: flex;
@@ -213,9 +219,12 @@ button { cursor: pointer; font-family: inherit; border: none; outline: none; }
   background: linear-gradient(135deg, var(--gold-500), var(--gold-400));
   color: var(--green-900);
   font-weight: 700;
-  box-shadow: var(--shadow-gold);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3), inset 0 1px 0 rgba(255,255,255,0.4);
 }
-.btn-gold:hover:not(:disabled) { opacity: 0.9; }
+.btn-gold:hover:not(:disabled) { 
+  opacity: 0.9; 
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4), inset 0 1px 0 rgba(255,255,255,0.4);
+}
 
 .btn-outline {
   background: transparent;
@@ -312,8 +321,10 @@ button { cursor: pointer; font-family: inherit; border: none; outline: none; }
 /* ---- NavBar ---- */
 .navbar {
   display: flex;
-  background: var(--surface-2);
-  border-top: 1px solid var(--border);
+  background: rgba(17, 30, 48, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid var(--glass-border);
   padding-bottom: env(safe-area-inset-bottom);
   flex-shrink: 0;
 }
@@ -675,6 +686,14 @@ sup.over { color: #f87171; font-size: 0.6rem; }
   border-top: 1px solid var(--border);
   padding-top: 8px;
 }
+.spin {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
 .view-link { margin-left: auto; color: var(--gold-400); font-weight: 600; }
 
 /* ---- Leaderboard Page ---- */
@@ -788,6 +807,97 @@ sup.stroke-dot {
   color: var(--gold-400);
   font-size: 0.6rem;
   letter-spacing: -1px;
+}
+
+/* ---- Bottom Sheet Numpad ---- */
+.bottom-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface-1);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--glass-border);
+  border-radius: 24px 24px 0 0;
+  padding: 20px 16px 40px;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+  z-index: 1001;
+}
+.bs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.bs-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.numpad-btn {
+  background: var(--surface-3);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  color: var(--text-primary);
+  font-size: 1.8rem;
+  font-weight: 700;
+  padding: 16px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.1s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.numpad-btn:active {
+  transform: scale(0.92);
+  background: var(--surface-4);
+}
+.numpad-btn.selected {
+  background: var(--gold-400);
+  color: var(--green-900);
+  border-color: var(--gold-400);
+}
+.numpad-btn.action {
+  font-size: 1.1rem;
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.score-display-btn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-align: center;
+  transition: background 0.15s, transform 0.1s;
+}
+.score-display-btn:active {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(0.96);
+}
+.score-display-btn.empty {
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 /* Totals table — 4-column variant for handicaps */

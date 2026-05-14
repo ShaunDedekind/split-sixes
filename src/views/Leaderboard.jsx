@@ -1,5 +1,8 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 import { getLeaderboardData } from '../utils/leaderboard';
+import { Medal } from 'lucide-react';
 
 const TABS = ['Points', 'Wins', 'Money'];
 
@@ -18,7 +21,11 @@ export default function Leaderboard() {
     return 0;
   });
 
-  const medals = ['🥇', '🥈', '🥉'];
+  const medals = [
+    <Medal size={20} color="var(--gold-400)" />,
+    <Medal size={20} color="#C0C0C0" />,
+    <Medal size={20} color="#CD7F32" />
+  ];
 
   return (
     <div className="page">

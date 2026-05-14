@@ -1,9 +1,13 @@
+"use client";
+
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getPlayers, addPlayer, savePlayers, createNewRound, saveActiveRound, getActiveRound, clearActiveRound, getCourses } from '../utils/storage';
+import { useRouter } from 'next/navigation';
+import { getPlayers, addPlayer, savePlayers, createNewRound, saveActiveRound, getActiveRound, clearActiveRound, getCourses, seedPresets } from '../utils/storage';
+import { PRESET_COURSES } from '../data/presets';
+import { Flag } from 'lucide-react';
 
 export default function Home() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [players, setPlayers] = useState([]);
   const [courses, setCourses] = useState([]);
   const [selectedPlayers, setSelectedPlayers] = useState([]);
@@ -15,6 +19,7 @@ export default function Home() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    seedPresets(PRESET_COURSES);
     setPlayers(getPlayers());
     setCourses(getCourses());
     setHasActive(!!getActiveRound());
@@ -83,13 +88,13 @@ export default function Home() {
     });
     const round = createNewRound(roundPlayers, holeCount, betAmount, selectedCourse);
     saveActiveRound(round);
-    navigate('/scorecard');
+    router.push('/scorecard');
   }
 
   return (
     <div className="page">
       <div className="hero">
-        <div className="hero-icon">⛳</div>
+        <div className="hero-icon" style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}><Flag size={48} color="var(--gold-400)" /></div>
         <h1 className="hero-title">Split Sixes</h1>
         <p className="hero-sub">Golf Points Game</p>
       </div>
@@ -98,7 +103,7 @@ export default function Home() {
         <div className="card resume-card">
           <p>You have an active round in progress.</p>
           <div className="action-row">
-            <button className="btn btn-gold" onClick={() => navigate('/scorecard')}>
+            <button className="btn btn-gold" onClick={() => router.push('/scorecard')}>
               Resume Round →
             </button>
             <button className="btn btn-outline" onClick={() => { clearActiveRound(); setHasActive(false); }}>

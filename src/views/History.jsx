@@ -1,10 +1,13 @@
+"use client";
+
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { getRounds, deleteRound } from '../utils/storage';
 import { calculateRoundTotals } from '../utils/scoring';
+import { Trash2, Trophy } from 'lucide-react';
 
 export default function History() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [rounds, setRounds] = useState([]);
 
   useEffect(() => {
@@ -28,7 +31,7 @@ export default function History() {
       {rounds.length === 0 && (
         <div className="card">
           <p className="empty-msg">No rounds recorded yet.<br />Start a round to see it here!</p>
-          <button className="btn btn-gold btn-full" onClick={() => navigate('/')}>Start New Round</button>
+          <button className="btn btn-gold btn-full" onClick={() => router.push('/')}>Start New Round</button>
         </div>
       )}
 
@@ -39,7 +42,7 @@ export default function History() {
             <RoundCard
               key={round.id}
               round={round}
-              onView={() => navigate('/scorecard')}
+              onView={() => router.push('/scorecard')}
               onDelete={(e) => handleDelete(round.id, e)}
             />
           ))}
@@ -53,7 +56,7 @@ export default function History() {
             <RoundCard
               key={round.id}
               round={round}
-              onView={() => navigate(`/summary/${round.id}`)}
+              onView={() => router.push(`/summary/${round.id}`)}
               onDelete={(e) => handleDelete(round.id, e)}
             />
           ))}
@@ -86,14 +89,18 @@ function RoundCard({ round, onView, onDelete }) {
           <span className={`status-badge ${round.status === 'completed' ? 'done' : 'active'}`}>
             {round.status === 'completed' ? 'Done' : 'Active'}
           </span>
-          <button className="btn-icon-danger" onClick={onDelete} title="Delete round">🗑</button>
+          <button className="btn-icon-danger" onClick={onDelete} title="Delete round">
+            <Trash2 size={16} />
+          </button>
         </div>
       </div>
 
       <div className="history-players">
         {sorted.map((p, i) => (
           <div key={p.id} className="history-player-row">
-            <span className="hist-rank">{i === 0 && winner ? '🏆' : `${i + 1}.`}</span>
+            <span className="hist-rank" style={{ display: 'flex', alignItems: 'center' }}>
+              {i === 0 && winner ? <Trophy size={14} color="var(--gold-400)" /> : `${i + 1}.`}
+            </span>
             <span className="hist-name">{p.name}</span>
             <span className="hist-pts">{totals[p.id]?.points ?? 0} pts</span>
             {round.settlement && (

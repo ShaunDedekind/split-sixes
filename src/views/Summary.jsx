@@ -1,22 +1,26 @@
+"use client";
+
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { getRoundById, saveRound } from '../utils/storage';
 import { calculateRoundTotals, calculateMoneySettlement, getHolePointsMap } from '../utils/scoring';
+import { Trophy, Medal } from 'lucide-react';
 
 export default function Summary() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { id: paramId } = useParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const params = useParams();
+  const paramId = params.id;
   const [round, setRound] = useState(null);
   const [totals, setTotals] = useState({});
   const [settlement, setSettlement] = useState([]);
 
-  const roundId = paramId || location.state?.roundId;
+  const roundId = paramId || searchParams.get('roundId');
 
   useEffect(() => {
-    if (!roundId) { navigate('/'); return; }
+    if (!roundId) { router.push('/'); return; }
     const r = getRoundById(roundId);
-    if (!r) { navigate('/'); return; }
+    if (!r) { router.push('/'); return; }
     const t = calculateRoundTotals(r.holes, r.players);
     const s = calculateMoneySettlement(t, r.players, r.betAmount);
     setRound(r);
@@ -44,7 +48,7 @@ export default function Summary() {
   return (
     <div className="page">
       <div className="card summary-hero">
-        <div className="trophy">🏆</div>
+        <div className="trophy"><Trophy size={48} color="var(--gold-400)" /></div>
         <h2 className="winner-name">{winner.name}</h2>
         <p className="winner-sub">Round Winner · {totals[winner.id]?.points ?? 0} points</p>
         <p className="round-meta">
@@ -58,7 +62,11 @@ export default function Summary() {
         <div className="standings">
           {sorted.map((player, i) => (
             <div key={player.id} className={`standing-row ${i === 0 ? 'standing-1' : i === 1 ? 'standing-2' : 'standing-3'}`}>
-              <div className="standing-rank">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</div>
+              <div className="standing-rank">
+                {i === 0 ? <Medal size={24} color="var(--gold-400)" /> : 
+                 i === 1 ? <Medal size={24} color="#C0C0C0" /> : 
+                           <Medal size={24} color="#CD7F32" />}
+              </div>
               <div className="standing-info">
                 <span className="standing-name">{player.name}</span>
                 <span className="standing-strokes">{totals[player.id]?.strokes ?? 0} strokes</span>
@@ -152,10 +160,10 @@ export default function Summary() {
       </div>
 
       <div className="action-row">
-        <button className="btn btn-outline" onClick={() => navigate('/history')}>
+        <button className="btn btn-outline" onClick={() => router.push('/history')}>
           Match History
         </button>
-        <button className="btn btn-gold" onClick={() => navigate('/')}>
+        <button className="btn btn-gold" onClick={() => router.push('/')}>
           New Round
         </button>
       </div>

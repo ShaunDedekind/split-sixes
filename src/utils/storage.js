@@ -4,6 +4,15 @@ const ACTIVE_ROUND_KEY = 'splitSixes_activeRound';
 const COURSES_KEY = 'splitSixes_courses';
 const SEEDED_KEY = 'splitSixes_seeded_v1';
 
+// We import triggerBackgroundSync dynamically to avoid circular dependencies if any,
+// but since sync.js imports storage.js, it's safer to require or use dynamic import.
+let triggerBackgroundSync = null;
+if (typeof window !== 'undefined') {
+  import('./sync.js').then(module => {
+    triggerBackgroundSync = module.triggerBackgroundSync;
+  });
+}
+
 function load(key, fallback) {
   try {
     const val = localStorage.getItem(key);
@@ -32,10 +41,17 @@ export function savePlayers(players) {
 
 export function addPlayer(name, handicap = 0) {
   const players = getPlayers();
-  const id = `player_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-  const newPlayer = { id, name: name.trim(), handicap: Number(handicap) };
+  const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `player_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const newPlayer = { 
+    id, 
+    name: name.trim(), 
+    handicap: Number(handicap),
+    sync_status: 'pending',
+    updated_at: new Date().toISOString()
+  };
   players.push(newPlayer);
   savePlayers(players);
+  if (triggerBackgroundSync) triggerBackgroundSync();
   return newPlayer;
 }
 
@@ -43,8 +59,14 @@ export function updatePlayerHandicap(playerId, handicap) {
   const players = getPlayers();
   const idx = players.findIndex(p => p.id === playerId);
   if (idx >= 0) {
-    players[idx] = { ...players[idx], handicap: Number(handicap) };
+    players[idx] = { 
+      ...players[idx], 
+      handicap: Number(handicap),
+      sync_status: 'pending',
+      updated_at: new Date().toISOString()
+    };
     savePlayers(players);
+    if (triggerBackgroundSync) triggerBackgroundSync();
   }
   return players;
 }
@@ -54,15 +76,24 @@ export function getRounds() {
   return load(ROUNDS_KEY, []);
 }
 
-export function saveRound(round) {
+export function saveRound(round, triggerSync = true) {
   const rounds = getRounds();
   const idx = rounds.findIndex(r => r.id === round.id);
+  
+  const roundToSave = {
+    ...round,
+    sync_status: round.sync_status || 'pending',
+    updated_at: new Date().toISOString()
+  };
+
   if (idx >= 0) {
-    rounds[idx] = round;
+    rounds[idx] = roundToSave;
   } else {
-    rounds.unshift(round);
+    rounds.unshift(roundToSave);
   }
   save(ROUNDS_KEY, rounds);
+  
+  if (triggerSync && triggerBackgroundSync) triggerBackgroundSync();
 }
 
 export function getRoundById(id) {
@@ -99,7 +130,7 @@ export function createNewRound(players, holeCount = 18, betAmount = 1, course = 
   });
 
   return {
-    id: `round_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `round_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     date: new Date().toISOString(),
     courseName: course?.name ?? '',
     courseId: course?.id ?? null,
@@ -109,6 +140,8 @@ export function createNewRound(players, holeCount = 18, betAmount = 1, course = 
     holes,
     status: 'active',
     useHandicaps: !!course,
+    sync_status: 'pending',
+    updated_at: new Date().toISOString()
   };
 }
 
@@ -128,13 +161,21 @@ export function getCourseById(id) {
 export function saveCourse(course) {
   const courses = getCourses();
   const idx = courses.findIndex(c => c.id === course.id);
+  
+  const courseToSave = {
+    ...course,
+    sync_status: 'pending',
+    updated_at: new Date().toISOString()
+  };
+
   if (idx >= 0) {
-    courses[idx] = course;
+    courses[idx] = courseToSave;
   } else {
-    courses.unshift(course);
+    courses.unshift(courseToSave);
   }
   save(COURSES_KEY, courses);
-  return course;
+  if (triggerBackgroundSync) triggerBackgroundSync();
+  return courseToSave;
 }
 
 export function deleteCourse(id) {
@@ -149,21 +190,24 @@ export function createCourse(name, holeCount = 18) {
     strokeIndex: i + 1,
   }));
   return {
-    id: `course_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `course_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     name: name.trim(),
     holeCount,
     holes,
+    sync_status: 'pending',
+    updated_at: new Date().toISOString()
   };
 }
 
 // --- Seeding preset data ---
 export function seedPresets(presetCourses) {
-  if (localStorage.getItem(SEEDED_KEY)) return; // already seeded
   const existing = getCourses();
-  const existingIds = new Set(existing.map(c => c.id));
-  const toAdd = presetCourses.filter(c => !existingIds.has(c.id));
-  if (toAdd.length > 0) {
-    save(COURSES_KEY, [...existing, ...toAdd]);
-  }
-  localStorage.setItem(SEEDED_KEY, '1');
+  const existingMap = new Map(existing.map(c => [c.id, c]));
+  
+  presetCourses.forEach(preset => {
+    existingMap.set(preset.id, { ...existingMap.get(preset.id), ...preset });
+  });
+
+  save(COURSES_KEY, Array.from(existingMap.values()));
+  localStorage.setItem(SEEDED_KEY, '2'); // bump version
 }
